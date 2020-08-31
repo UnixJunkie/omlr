@@ -1,6 +1,8 @@
 
 module A = BatArray
+module Arr = Owl.Arr
 module L = BatList
+module Linalg = Owl.Linalg
 module Mat = Owl.Mat
 module S = BatString
 
@@ -53,17 +55,35 @@ let normalize_features arr =
   done;
   (norm_params, to_normalize)
 
-(* compute model using analytic solution
-   (may fail on some problems) *)
-let train_model_ana _arr =
-  failwith "not implemented yet"
-
-(* compute model using gradient descent *)
+(* compute model using gradient descent
+   !!! the features in [arr] must be already normalized !!! *)
 let train_model_gd arr =
-  let dimx = A.length (arr.(0)) in
+  let dimx = A.length arr in
   let data = Mat.of_arrays arr in
-  (* all lines, only first column *)
+  (* all lines, only first column (target value) *)
   let y = Mat.get_slice [[]; [0]] data in
   (* all lines, all but first column *)
   let x = Mat.get_slice [[]; L.range 1 `To (dimx - 1)] data in
   Owl.Regression.D.ols ~i:true y x
+
+(* compute model analytically (may fail on some problem instances)
+   !!! the features in [arr] must be already normalized !!! *)
+let train_model_ana arr =
+  let dimx = A.length arr in
+  let dimy = A.length arr.(0) in
+  let data = Mat.of_arrays arr in
+  (* all lines, only first column (target value) *)
+  let y = Mat.get_slice [[]; [0]] data in
+  (* all lines, all but first column *)
+  let x = Mat.get_slice [[]; L.range 1 `To (dimx - 1)] data in
+  let z =
+    let o = Arr.ones [|dimy; 1|] in
+    Arr.concatenate ~axis:1 [|o; x|] in
+  let zT = Mat.transpose z in
+  let zTz_inv =
+    let zTz = Mat.dot zT z in
+    Linalg.D.inv zTz in
+  Mat.(dot (dot zTz_inv zT) y)
+
+let apply_model _norm_params _model _arr =
+  failwith "not implemented yet"
