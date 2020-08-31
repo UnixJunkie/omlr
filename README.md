@@ -1,2 +1,4 @@
 # omlr
-OCaml wrapper on top of R to perform Multiple Linear Regression
+
+Multiple Linear Regression in OCaml using owl
+
