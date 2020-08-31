@@ -4,16 +4,28 @@
 # R example: https://www.tutorialspoint.com/r/r_multiple_regression.htm
 
 # read data in
-train <- read.csv("data/moldescs.csv", header = T, sep = ",")
+raw <- read.csv("data/moldescs_scaled.csv", header = T, sep = ",")
 # only keep interesting columns
-train <- train[,c("score","MolW","cLogP","RotB")]
+train <- raw[,c("score","MolW.scaled","cLogP.scaled","RotB.scaled")]
 
-# FBR: TODO
-# center and scale all dependant variables, store the scaling parameters
-# with the model
+molw <- train[,c("MolW.scaled")]
+molw_mean <- mean(molw)
+molw_sd <- sd(molw)
+print(c("MolW", molw_mean, molw_sd))
+
+clogp <- train[,c("cLogP.scaled")]
+clogp_mean <- mean(clogp)
+clogp_sd <- sd(clogp)
+print(c("cLogP", clogp_mean, clogp_sd))
+
+rotb <- train[,c("RotB.scaled")]
+rotb_mean <- mean(rotb)
+rotb_sd <- sd(rotb)
+print(c("RotB", rotb_mean, rotb_sd))
 
 # train model
-model <- lm(score ~ MolW + cLogP + RotB, data = train)
+# !!! ALL DEPENDANT VARIABLES MUST HAVE BEEN SCALED BEFORE !!!
+model <- lm(score ~ MolW.scaled + cLogP.scaled + RotB.scaled, data = train)
 
 # Show the model.
 a <- coef(model)[1]
