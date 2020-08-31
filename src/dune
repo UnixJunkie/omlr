@@ -2,12 +2,12 @@
 (library
   (name omlr)
   (public_name omlr)
-  (modules MLR)
-  (libraries batteries dolog))
+  (modules MLR utls)
+  (libraries batteries dolog owl))
 
 ;; installed executables
 (executables
   (names model)
   (public_names mlr_model)
-  (modules nodel)
+  (modules model)
   (libraries omlr batteries dolog minicli cpm))
