@@ -1,0 +1,13 @@
+
+(library
+  (name omlr)
+  (public_name omlr)
+  (modules MLR)
+  (libraries batteries dolog))
+
+;; installed executables
+(executables
+  (names model)
+  (public_names mlr_model)
+  (modules nodel)
+  (libraries omlr batteries dolog minicli cpm))
