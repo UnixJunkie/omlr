@@ -39,8 +39,7 @@ let main () =
     end;
   let input_fn = CLI.get_string ["-i"] args in
   let data = MLR.load_csv_file true ',' input_fn in
-  let _norm_params, normalized = MLR.normalize_features data in
-  let _ = MLR.train_model_gd normalized in
+  let _norm_params = MLR.standardization_params data in
   ()
 
 let () = main ()
