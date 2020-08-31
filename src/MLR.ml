@@ -57,6 +57,7 @@ let standardization_params arr =
   done;
   res
 
+(* apply standardization parameters, in-place *)
 let standardize std_params arr =
   let dimx = A.length arr in
   let dimy = A.length arr.(0) in
@@ -73,7 +74,22 @@ let standardize std_params arr =
 (* train model
    !!! the features in [arr] must be already normalized !!! *)
 let train_model _arr =
+  (* dump matrix to file, adding a new CSV header line "1,2,3,4,..." *)
+  (* create and run the R script *)
+  (* extract and return the computed weights *)
   failwith "not implemented yet"
 
-let apply_model _model _arr =
-  failwith "not implemented yet"
+(* apply the model to a single observation *)
+let predict_one model arr =
+  (* standardize *)
+  let dimx = A.length model in
+  let res = ref 0.0 in
+  (* ignore column 0 *)
+  for i = 1 to dimx - 1 do
+    (* standardize *)
+    let std = model.(i) in
+    let feat' = (arr.(i) -. std.mean) /. std.sd in
+    (* update prediction *)
+    res := !res +. (std.w *. feat')
+  done;
+  !res
