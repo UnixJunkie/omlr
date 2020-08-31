@@ -57,6 +57,19 @@ let standardization_params arr =
   done;
   res
 
+let standardize std_params arr =
+  let dimx = A.length arr in
+  let dimy = A.length arr.(0) in
+  (* the first column (arr.(0)) is the target value;
+     it must not be normalized *)
+  for x = 1 to dimx - 1 do
+    let std = std_params.(x) in
+    for y = 0 to dimy - 1 do
+      let z = arr.(x).(y) in
+      arr.(x).(y) <- (z -. std.mean) /. std.sd
+    done
+  done
+
 (* train model
    !!! the features in [arr] must be already normalized !!! *)
 let train_model _arr =
