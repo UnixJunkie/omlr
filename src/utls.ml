@@ -432,66 +432,16 @@ let stddev (l: float list): float =
   sqrt ((sx2 -. (sx *. sx) /. n) /. n)
 (* stddev [2.; 4.; 4.; 4.; 5.; 5.; 7.; 9.] = 2.0 *)
 
-(* elements ranks as floats (in a new array) *)
-let rank (arr: float array): float array =
-  let sorted = A.copy arr in
-  A.sort Float.compare sorted;
-  let n = A.length arr in
-  let ht = Ht.create n in
-  let rank = ref 1.0 in
-  A.iter (fun x ->
-      try
-        begin (* deal with ties *)
-          let ranks = Ht.find ht x in
-          Ht.replace ht x (!rank :: ranks);
-          rank := !rank +. 1.0
-        end
-      with Not_found ->
-        begin
-          Ht.add ht x [!rank];
-          rank := !rank +. 1.0
-        end
-    ) sorted;
-  let elt2rank = Ht.map (fun _elt ranks -> L.favg ranks) ht in
-  A.iteri (fun i x ->
-      A.unsafe_set sorted i (Ht.find elt2rank x)
-    ) arr;
-  sorted
-
-(* (\* unit test for rank *\)
- * let () =
- *   assert(rank [|2.; 4.; 7.; 7.; 12.|] = [|1.0; 2.0; 3.5; 3.5; 5.0|]) *)
-
-(* Code comes from Biocaml.Math *)
-let wilcoxon_rank_sum_to_z arr1 arr2 =
-  let l1, l2 = A.(length arr1, length arr2) in
-  let ranked = rank (A.append arr1 arr2) in
-  let arr1 = A.sub ranked 0 l1 in
-  let l1, l2 = Float.(of_int l1, of_int l2) in
-  let sum1 = A.fsum arr1 in
-  let expectation = (l1 *. (l1 +. l2 +. 1.)) /. 2. in
-  let var = (l1 *. l2 *. ((l1 +. l2 +. 1.) /. 12.)) in
-  (sum1 -. expectation) /. (sqrt var)
-
-let cnd x =
-  (* Modified from C++ code by David Koppstein. Found from
-   www.sitmo.com/doc/Calculating_the_Cumulative_Normal_Distribution *)
-  let b1, b2, b3, b4, b5, p, c =
-    0.319381530, -0.356563782, 1.781477937, -1.821255978,
-    1.330274429, 0.2316419, 0.39894228 in
-  if x >= 0.0 then
-    let t = 1. /. (1. +. (p *. x)) in
-    (1. -. (c *. (exp (-.x *. x /. 2.)) *. t *.
-              (t *. (t *. (t *. ((t *. b5) +. b4) +. b3) +. b2) +. b1)))
-  else
-    let t = 1. /. (1. -. p *. x) in
-    c *. (exp (-.x *. x /. 2.)) *. t *.
-      (t *. (t *. (t *. ((t *. b5) +. b4) +. b3) +. b2) +. b1)
-
-let wilcoxon_rank_sum_to_p arr1 arr2 =
-  (* assumes a two-tailed distribution *)
-  let z = wilcoxon_rank_sum_to_z arr1 arr2 in
-  2. *. (1. -. (cnd (Float.abs z)))
+let transpose_matrix a =
+  let dimx = Array.length a in
+  let dimy = Array.length a.(0) in
+  let res = Array.make_matrix dimy dimx a.(0).(0) in
+  for x = 0 to dimx - 1 do
+    for y = 0 to dimy - 1 do
+      res.(y).(x) <- a.(x).(y)
+    done
+  done;
+  res
 
 let fincr_by (xref: float ref) (dx: float): unit =
   xref := !xref +. dx
