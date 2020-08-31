@@ -432,6 +432,15 @@ let stddev (l: float list): float =
   sqrt ((sx2 -. (sx *. sx) /. n) /. n)
 (* stddev [2.; 4.; 4.; 4.; 5.; 5.; 7.; 9.] = 2.0 *)
 
+let stddev_a (a: float array): float =
+  let n, sx, sx2 =
+    Array.fold_left (fun (n, sx, sx2) x ->
+        (n +. 1., sx +. x, sx2 +. (x *.x))
+      ) (0., 0., 0.) a
+  in
+  sqrt ((sx2 -. (sx *. sx) /. n) /. n)
+(* stddev_a [| 2.; 4.; 4.; 4.; 5.; 5.; 7.; 9. |] = 2.0 *)
+
 let transpose_matrix a =
   let dimx = Array.length a in
   let dimy = Array.length a.(0) in
