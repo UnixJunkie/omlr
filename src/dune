@@ -3,7 +3,7 @@
   (name omlr)
   (public_name omlr)
   (modules MLR utls)
-  (libraries batteries dolog owl))
+  (libraries batteries dolog))
 
 ;; installed executables
 (executables
