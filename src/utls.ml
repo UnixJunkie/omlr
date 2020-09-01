@@ -515,3 +515,26 @@ let list_really_take n l =
   let took = L.take n l in
   assert(L.length took = n);
   took
+
+let dump_to_csv_file fn sep arr =
+  with_out_file fn (fun out ->
+      let dimx = A.length arr in
+      let dimy = A.length arr.(0) in
+      (* CSV header *)
+      for x = 0 to dimx - 1 do
+        if x = 0 then
+          fprintf out "%d" x
+        else
+          fprintf out "%c%d" sep x
+      done;
+      fprintf out "\n";
+      for y = 0 to dimy - 1 do
+        for x = 0 to dimx - 1 do
+          if x = 0 then
+            fprintf out "%f" arr.(x).(y)
+          else
+            fprintf out "%c%f" sep arr.(x).(y)
+        done;
+        fprintf out "\n"
+      done
+    )
