@@ -508,6 +508,10 @@ let count_lines_of_file (fn: string): int =
   iter_on_lines_of_file fn (fun _line -> incr count);
   !count
 
+(* read a file containing only floats, one per line *)
+let floats_from_file fn =
+  map_on_lines_of_file fn float_of_string
+
 let list_rev_sort cmp l =
   List.sort (fun x y -> cmp y x) l
 
