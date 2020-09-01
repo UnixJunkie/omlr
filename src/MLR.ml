@@ -60,7 +60,7 @@ let standardization_params arr =
   res
 
 (* apply standardization parameters, in-place *)
-let standardize std_params arr =
+let standardize (std_params: std_params) arr =
   let dimx = A.length arr in
   let dimy = A.length arr.(0) in
   (* the first column (arr.(0)) is the target value;
@@ -117,11 +117,11 @@ let train_model debug arr =
   weights
 
 (* apply the model to a single observation *)
-let predict_one model arr =
+let predict_one (model: model) arr =
   (* standardize *)
   let dimx = A.length model in
   (* add line intercept *)
-  let res = ref arr.(0) in
+  let res = ref model.(0).w in
   for i = 1 to dimx - 1 do
     (* standardize *)
     let std = model.(i) in
