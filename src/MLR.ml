@@ -75,10 +75,10 @@ let standardize (std_params: std_params) arr =
 
 let regression_formula nb_columns =
   let buff = Buffer.create 80 in
-  Buffer.add_string buff "0 ~ ";
+  Buffer.add_string buff "c0 ~ ";
   for i = 1 to nb_columns - 1 do
-    if i = 1 then bprintf buff "%d" i
-    else bprintf buff " + %d" i
+    if i = 1 then bprintf buff "c%d" i
+    else bprintf buff " + c%d" i
   done;
   Buffer.contents buff
 
@@ -96,8 +96,8 @@ let train_model debug arr =
   Utls.with_out_file tmp_rscript_fn (fun out ->
       fprintf out
         "train <- read.csv('%s', header = T, sep = ',')\n\
-         model <- lm('%s', data = train)
-         write.table(model$coeff, file='%s', sep='\n', \
+         model <- lm('%s', data = train)\n\
+         write.table(model$coeff, file='%s', sep='\\n', \
                      row.names = F, col.names = F)\n"
         tmp_csv_fn regr_formula tmp_out_params_fn
     );

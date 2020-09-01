@@ -10,6 +10,7 @@
 
 open Printf
 
+module A = Array
 module CLI = Minicli.CLI
 module L = BatList
 module Log = Dolog.Log
@@ -37,9 +38,19 @@ let main () =
         Sys.argv.(0);
       exit 1
     end;
+  (* TODO shuffle input *)
+  (* TODO train on train *)
+  (* TODO test on test *)
+  (* TODO compute R2 *)
+  (* TODO gnuplot *)
+  (* TODO implement --NxCV *)
   let input_fn = CLI.get_string ["-i"] args in
-  let data = MLR.load_csv_file true ',' input_fn in
-  let _norm_params = MLR.standardization_params data in
+  let skip_header = true in
+  let data = MLR.load_csv_file skip_header ',' input_fn in
+  let std_params = MLR.standardization_params data in
+  MLR.standardize std_params data;
+  let coeffs = MLR.train_model true data in
+  A.iter (printf "%f\n") coeffs;
   ()
 
 let () = main ()
