@@ -1,6 +1,8 @@
 
 module A = BatArray
+module Fn = Filename
 module L = BatList
+module Log = Dolog.Log
 module S = BatString
 
 open Printf
@@ -71,20 +73,55 @@ let standardize std_params arr =
     done
   done
 
+let regression_formula nb_columns =
+  let buff = Buffer.create 80 in
+  Buffer.add_string buff "0 ~ ";
+  for i = 1 to nb_columns - 1 do
+    if i = 1 then bprintf buff "%d" i
+    else bprintf buff " + %d" i
+  done;
+  Buffer.contents buff
+
 (* train model
    !!! the features in [arr] must be already normalized !!! *)
-let train_model _arr =
-  (* dump matrix to file, adding a new CSV header line "1,2,3,4,..." *)
-  (* create and run the R script *)
-  (* extract and return the computed weights *)
-  failwith "not implemented yet"
+let train_model debug arr =
+  let nb_cols = A.length arr in
+  let tmp_out_params_fn = Fn.temp_file ~temp_dir:"/tmp" "mlr_" ".txt" in
+  (* dump matrix to file, adding CSV header line "0,1,2,3,4,..." *)
+  let tmp_csv_fn = Fn.temp_file ~temp_dir:"/tmp" "mlr_" ".csv" in
+  Utls.dump_to_csv_file tmp_csv_fn ',' arr;
+  (* create R script *)
+  let tmp_rscript_fn = Fn.temp_file ~temp_dir:"/tmp" "mlr_" ".r" in
+  let regr_formula = regression_formula nb_cols in
+  Utls.with_out_file tmp_rscript_fn (fun out ->
+      fprintf out
+        "train <- read.csv('%s', header = T, sep = ',')\n\
+         model <- lm('%s', data = train)
+         write.table(model$coeff, file='%s', sep='\n', \
+                     row.names = F, col.names = F)\n"
+        tmp_csv_fn regr_formula tmp_out_params_fn
+    );
+  let r_log_fn = Filename.temp_file ~temp_dir:"/tmp" "mlr_train_" ".log" in
+  (* execute R script *)
+  let cmd =
+    sprintf "(R --vanilla --slave < %s 2>&1) > %s" tmp_rscript_fn r_log_fn in
+  if debug then Log.debug "%s" cmd;
+  if Sys.command cmd <> 0 then
+    failwith ("MLR.train_model: R failure: " ^ cmd);
+  (* extract and return learned weights *)
+  let weights = A.of_list (Utls.floats_from_file tmp_out_params_fn) in
+  (* clean tmp files *)
+  if not debug then
+    List.iter Sys.remove
+      [tmp_out_params_fn; tmp_csv_fn; tmp_rscript_fn; r_log_fn];
+  weights
 
 (* apply the model to a single observation *)
 let predict_one model arr =
   (* standardize *)
   let dimx = A.length model in
-  let res = ref 0.0 in
-  (* ignore column 0 *)
+  (* add line intercept *)
+  let res = ref arr.(0) in
   for i = 1 to dimx - 1 do
     (* standardize *)
     let std = model.(i) in
