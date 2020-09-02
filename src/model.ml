@@ -89,15 +89,14 @@ let main () =
       exit 1
     end;
   (* CLI options *)
-  let randomize = CLI.get_reset_bool ["--no-shuffle"] args in
-  let skip_header = CLI.get_reset_bool ["--no-header"] args in
-  let no_plot = CLI.get_reset_bool ["--no-plot"] args in
+  let randomize = not (CLI.get_set_bool ["--no-shuffle"] args) in
+  let skip_header = not (CLI.get_set_bool ["--no-header"] args) in
+  let no_plot = CLI.get_set_bool ["--no-plot"] args in
   let train_portion = CLI.get_float_def ["-p"] args 0.8 in
   let maybe_model_fn = CLI.get_string_opt ["-s"] args in
   let debug = CLI.get_set_bool ["-v"] args in
   let sep = CLI.get_char_def ["-d"] args ',' in
   let nfolds = CLI.get_int_def ["-n";"--NxCV"] args 1 in
-  (* TODO implement -l *)
   let input_fn = CLI.get_string ["-i"] args in
   CLI.finalize (); (* ------------------------------------------------------ *)
   let actual, preds =
