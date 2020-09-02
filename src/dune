@@ -2,7 +2,7 @@
 (library
   (name omlr)
   (public_name omlr)
-  (modules MLR utls)
+  (modules MLR utls gnuplot)
   (libraries batteries dolog))
 
 ;; installed executables
