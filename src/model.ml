@@ -27,6 +27,20 @@ let train debug sep maybe_model_fn train_lines =
   );
   model
 
+let test sep model nb_test test_lines =
+  let actual, test_data =
+    let a = MLR.matrix_of_csv_lines ~sep test_lines in
+    (* first col. is target value *)
+    (A.to_list a.(0), Utls.transpose_matrix a) in
+  assert(A.length test_data = nb_test);
+  let preds =
+    let predicted' =
+      A.init nb_test (fun i ->
+          MLR.predict_one model test_data.(i)
+        ) in
+    A.to_list predicted' in
+  (actual, preds)
+
 let main () =
   Log.(set_log_level DEBUG);
   Log.color_on ();
@@ -74,17 +88,7 @@ let main () =
   (* train *)
   let model = train debug sep maybe_model_fn train_lines in
   (* test *)
-  let actual, test_data =
-    let a = MLR.matrix_of_csv_lines ~sep test_lines in
-    (* first col. is target value *)
-    (A.to_list a.(0), Utls.transpose_matrix a) in
-  assert(A.length test_data = nb_test);
-  let preds =
-    let predicted' =
-      A.init nb_test (fun i ->
-          MLR.predict_one model test_data.(i)
-        ) in
-    A.to_list predicted' in
+  let actual, preds = test sep model nb_test test_lines in
   let r2 = Cpm.RegrStats.r2 actual preds in
   let r2_str = sprintf "R2: %.3f" r2 in
   (if not no_plot then Gnuplot.regr_plot r2_str actual preds);
