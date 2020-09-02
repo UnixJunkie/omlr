@@ -12,10 +12,16 @@ open Printf
    The first column is supposed to contain the target variable.
    All other columns are supposed to contain the parameters whose weights
    in the MLR model we want to find. *)
-let load_csv_file skip_header sep csv_fn =
-  let all_lines = match Utls.lines_of_file csv_fn with
-    | [] -> failwith ("MLR.load_csv_file: no lines in " ^ csv_fn)
-    | x :: xs -> if skip_header then xs else x :: xs in
+let load_csv_file ~randomize ~skip_header sep csv_fn =
+  let all_lines =
+    let all_lines' = match Utls.lines_of_file csv_fn with
+      | [] -> failwith ("MLR.load_csv_file: no lines in " ^ csv_fn)
+      | x :: xs -> if skip_header then xs else x :: xs in
+    if randomize then
+      let rng = BatRandom.State.make_self_init () in
+      L.shuffle ~state:rng all_lines'
+    else
+      all_lines' in
   let fst_line = L.hd all_lines in
   let dimx = (S.count_char fst_line sep) + 1 in
   let dimy = L.length all_lines in
