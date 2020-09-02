@@ -29,38 +29,41 @@ let main () =
       eprintf "usage:\n\
                %s\n  \
                [-i <input.csv>]: input CSV file\n  \
-               [--NxCV <int>]: number of folds of cross validation\n  \
-               [-s|--save <filename>]: save model to file\n  \
-               [-l|--load <filename>]: restore model from file\n  \
-               [-o <filename>]: predictions output file\n  \
+               TODO [--NxCV <int>]: number of folds of cross validation\n  \
+               TODO [-s|--save <filename>]: save model to file\n  \
+               TODO [-l|--load <filename>]: restore model from file\n  \
+               TODO [-o <filename>]: predictions output file\n  \
+               [--no-shuffle]: do not randomize input lines\n  \
+               [--no-header]: CSV file has no header\n  \
                [--no-plot]: don't call gnuplot\n  \
+               [-d <char>]: field delimited in CSV file (default=',')\n  \
                [-v]: verbose/debug mode\n  \
                [-h|--help]: show this message\n"
         Sys.argv.(0);
       exit 1
     end;
-  (* defaults options ------------------------------------------------------ *)
-  let randomize = true in
-  let skip_header = true in
-  let train_portion = ref 0.8 in
-  let debug = false in
-  let sep = ',' in
-  let no_plot = false in
+  (* CLI options *)
+  let randomize = CLI.get_reset_bool ["--no-shuffle"] args in
+  let skip_header = CLI.get_reset_bool ["--no-header"] args in
+  let no_plot = CLI.get_reset_bool ["--no-plot"] args in
+  let train_portion = CLI.get_float_def ["-p"] args 0.8 in
+  let debug = CLI.get_set_bool ["-v"] args in
+  let sep = CLI.get_char_def ["-d"] args ',' in
   (* TODO implement --NxCV *)
   (* TODO implement -l *)
   (* TODO implement -s *)
+  (* TODO: log the model in some way; even if not saved to file *)
   let input_fn = CLI.get_string ["-i"] args in
   CLI.finalize (); (* ------------------------------------------------------ *)
   let train_lines, test_lines =
     let all_lines = MLR.read_csv_file ~randomize ~skip_header input_fn in
-    Cpm.Utls.train_test_split !train_portion all_lines in
+    Cpm.Utls.train_test_split train_portion all_lines in
   let nb_train, nb_test = L.(length train_lines, length test_lines) in
   Log.info "train: %d test: %d total: %d"
     nb_train nb_test (nb_train + nb_test);
   (* train *)
   let train_data = MLR.matrix_of_csv_lines ~sep train_lines in
   let model = MLR.train_model ~debug train_data in
-  (* FBR: log the model in some way; even if not saved to file *)
   (* test *)
   let actual, test_data =
     let a = MLR.matrix_of_csv_lines ~sep test_lines in
