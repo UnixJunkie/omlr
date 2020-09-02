@@ -34,7 +34,7 @@ let read_csv_file ~randomize ~skip_header csv_fn =
     all_lines'
 
 (* CSV lines to 2D array *)
-let matrix_of_csv_lines sep all_lines =
+let matrix_of_csv_lines ~sep all_lines =
   let fst_line = L.hd all_lines in
   let dimx = (S.count_char fst_line sep) + 1 in
   let dimy = L.length all_lines in
@@ -123,7 +123,15 @@ let train_model ~debug arr =
       [tmp_out_params_fn; tmp_csv_fn; tmp_rscript_fn; r_log_fn];
   weights
 
-(* apply the model to a single observation *)
+let combine_std_params_and_optim_weights
+    (std_params: std_params) (weights: float array): model =
+  A.map2 (fun (std: std_param) (w: float) ->
+      { mean = std.mean; sd = std.sd; w }
+    ) std_params weights
+
+(* /!\ standardize (test) data /!\
+   THEN apply the model to a single observation
+   !!! i.e. DON'T STANDARDIZE TEST DATA BEFORE !!! *)
 let predict_one (model: model) arr =
   (* standardize *)
   let dimx = A.length model in
