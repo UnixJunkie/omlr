@@ -365,6 +365,17 @@ let string_of_array ?pre:(pre = "[|") ?sep:(sep = ";") ?suf:(suf = "|]")
   Buffer.add_string buff suf;
   Buffer.contents buff
 
+let string_of_list ?pre:(pre = "[") ?sep:(sep = ";") ?suf:(suf = "]")
+    to_str l =
+  let buff = Buffer.create 80 in
+  Buffer.add_string buff pre;
+  L.iteri (fun i x ->
+      if i > 0 then Buffer.add_string buff sep;
+      Buffer.add_string buff (to_str x)
+    ) l;
+  Buffer.add_string buff suf;
+  Buffer.contents buff
+
 (* marshal x to file *)
 let save fn x =
   with_out_file fn (fun out ->
