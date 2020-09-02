@@ -58,14 +58,8 @@ let main () =
     nb_train nb_test (nb_train + nb_test);
   (* train *)
   let train_data = MLR.matrix_of_csv_lines ~sep train_lines in
-  let std_params = MLR.standardization_params train_data in
-  MLR.standardize std_params train_data; (* IMPORTANT *)
-  (* FBR: make std_params a param of ML.train_model to force users to std the train
-   *     data *)
-  let coeffs = MLR.train_model ~debug train_data in
-  let model = MLR.combine_std_params_and_optim_weights std_params coeffs in
-  let coeffs_str = Utls.string_of_floats_array coeffs in
-  Log.info "model coeffs: %s" coeffs_str;
+  let model = MLR.train_model ~debug train_data in
+  (* FBR: log the model in some way; even if not saved to file *)
   (* test *)
   let actual, test_data =
     let a = MLR.matrix_of_csv_lines ~sep test_lines in

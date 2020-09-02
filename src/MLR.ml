@@ -80,6 +80,12 @@ let standardize (std_params: std_params) arr =
     done
   done
 
+let combine_std_params_and_optim_weights
+    (std_params: std_params) (weights: float array): model =
+  A.map2 (fun (std: std_param) (w: float) ->
+      { mean = std.mean; sd = std.sd; w }
+    ) std_params weights
+
 let regression_formula nb_columns =
   let buff = Buffer.create 80 in
   Buffer.add_string buff "c0 ~ ";
@@ -89,9 +95,10 @@ let regression_formula nb_columns =
   done;
   Buffer.contents buff
 
-(* train model
-   !!! the features in [arr] must be already normalized !!! *)
+(* compute standardization parameters, apply them THEN train a model *)
 let train_model ~debug arr =
+  let std_params = standardization_params arr in
+  standardize std_params arr; (* IMPORTANT *)
   let nb_cols = A.length arr in
   let tmp_out_params_fn = Fn.temp_file ~temp_dir:"/tmp" "mlr_" ".txt" in
   (* dump matrix to file, adding CSV header line "0,1,2,3,4,..." *)
@@ -121,13 +128,7 @@ let train_model ~debug arr =
   if not debug then
     List.iter Sys.remove
       [tmp_out_params_fn; tmp_csv_fn; tmp_rscript_fn; r_log_fn];
-  weights
-
-let combine_std_params_and_optim_weights
-    (std_params: std_params) (weights: float array): model =
-  A.map2 (fun (std: std_param) (w: float) ->
-      { mean = std.mean; sd = std.sd; w }
-    ) std_params weights
+  combine_std_params_and_optim_weights std_params weights
 
 (* /!\ standardize (test) data /!\
    THEN apply the model to a single observation
