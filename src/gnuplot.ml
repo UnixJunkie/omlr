@@ -2,8 +2,6 @@
 open Printf
 
 module L = BatList
-module Stats = Cpm.RegrStats
-module Utls = Oplsr.Utls
 
 let regr_plot title actual preds =
   let x_min, x_max = L.min_max ~cmp:BatFloat.compare actual in
