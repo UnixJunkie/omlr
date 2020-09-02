@@ -91,7 +91,7 @@ let regression_formula nb_columns =
 
 (* train model
    !!! the features in [arr] must be already normalized !!! *)
-let train_model debug arr =
+let train_model ~debug arr =
   let nb_cols = A.length arr in
   let tmp_out_params_fn = Fn.temp_file ~temp_dir:"/tmp" "mlr_" ".txt" in
   (* dump matrix to file, adding CSV header line "0,1,2,3,4,..." *)
