@@ -18,6 +18,15 @@ module Log = Dolog.Log
 module MLR = Omlr.MLR
 module Utls = Omlr.Utls
 
+let train debug sep maybe_model_fn train_lines =
+  let train_data = MLR.matrix_of_csv_lines ~sep train_lines in
+  let model = MLR.train_model ~debug train_data in
+  (match maybe_model_fn with
+   | None -> MLR.dump_model_to_file "/dev/stdout" model;
+   | Some fn -> MLR.dump_model_to_file fn model
+  );
+  model
+
 let main () =
   Log.(set_log_level DEBUG);
   Log.color_on ();
@@ -30,7 +39,7 @@ let main () =
                %s\n  \
                [-i <input.csv>]: input CSV file\n  \
                TODO [--NxCV <int>]: number of folds of cross validation\n  \
-               TODO [-s|--save <filename>]: save model to file\n  \
+               [-s|--save <filename>]: save model to file\n  \
                TODO [-l|--load <filename>]: restore model from file\n  \
                TODO [-o <filename>]: predictions output file\n  \
                [--no-shuffle]: do not randomize input lines\n  \
@@ -47,12 +56,13 @@ let main () =
   let skip_header = CLI.get_reset_bool ["--no-header"] args in
   let no_plot = CLI.get_reset_bool ["--no-plot"] args in
   let train_portion = CLI.get_float_def ["-p"] args 0.8 in
+  let maybe_model_fn = CLI.get_string_opt ["-s"] args in
   let debug = CLI.get_set_bool ["-v"] args in
   let sep = CLI.get_char_def ["-d"] args ',' in
+  let _nfolds = CLI.get_int_def ["-n";"--NxCV"] args 1 in
   (* TODO implement --NxCV *)
   (* TODO implement -l *)
   (* TODO implement -s *)
-  (* TODO: log the model in some way; even if not saved to file *)
   let input_fn = CLI.get_string ["-i"] args in
   CLI.finalize (); (* ------------------------------------------------------ *)
   let train_lines, test_lines =
@@ -62,8 +72,7 @@ let main () =
   Log.info "train: %d test: %d total: %d"
     nb_train nb_test (nb_train + nb_test);
   (* train *)
-  let train_data = MLR.matrix_of_csv_lines ~sep train_lines in
-  let model = MLR.train_model ~debug train_data in
+  let model = train debug sep maybe_model_fn train_lines in
   (* test *)
   let actual, test_data =
     let a = MLR.matrix_of_csv_lines ~sep test_lines in
