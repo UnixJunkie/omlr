@@ -43,21 +43,40 @@ let main () =
   let skip_header = true in
   let train_portion = ref 0.8 in
   let debug = false in
-  (* TODO train on train, test on test *)
-  (* TODO compute R2 *)
+  let sep = ',' in
   (* TODO gnuplot *)
   (* TODO implement --NxCV *)
+  (* TODO implement -l *)
+  (* TODO implement -s *)
   let input_fn = CLI.get_string ["-i"] args in
   CLI.finalize (); (* ------------------------------------------------------ *)
-  let train_lines, _test_lines =
+  let train_lines, test_lines =
     let all_lines = MLR.read_csv_file ~randomize ~skip_header input_fn in
     Cpm.Utls.train_test_split !train_portion all_lines in
-  let train_data = MLR.matrix_of_csv_lines ',' train_lines in
+  let nb_train, nb_test = L.(length train_lines, length test_lines) in
+  Log.info "train: %d test: %d total: %d"
+    nb_train nb_test (nb_train + nb_test);
+  (* train *)
+  let train_data = MLR.matrix_of_csv_lines ~sep train_lines in
   let std_params = MLR.standardization_params train_data in
-  MLR.standardize std_params train_data;
+  MLR.standardize std_params train_data; (* IMPORTANT *)
+  (* FBR: make std_params a param of ML.train_model to force users to std the train
+   *     data *)
   let coeffs = MLR.train_model ~debug train_data in
+  let model = MLR.combine_std_params_and_optim_weights std_params coeffs in
   let coeffs_str = Utls.string_of_floats_array coeffs in
   Log.info "model coeffs: %s" coeffs_str;
-  ()
+  (* test *)
+  let actual, test_data =
+    let a = MLR.matrix_of_csv_lines ~sep test_lines in
+    (* first col. is target value *)
+    (a.(0), Utls.transpose_matrix a) in
+  let predicted = A.make nb_test 0.0 in
+  assert(A.length test_data = nb_test); (* FBR: CHECK *)
+  for i = 0 to nb_test - 1 do
+    predicted.(i) <- MLR.predict_one model test_data.(i)
+  done;
+  let r2 = Cpm.RegrStats.r2 (A.to_list actual) (A.to_list predicted) in
+  Log.info "R2: %.3f" r2
 
 let () = main ()
