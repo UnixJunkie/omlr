@@ -12,6 +12,7 @@ open Printf
 
 module A = Array
 module CLI = Minicli.CLI
+module Gnuplot = Omlr.Gnuplot
 module L = BatList
 module Log = Dolog.Log
 module MLR = Omlr.MLR
@@ -44,7 +45,7 @@ let main () =
   let train_portion = ref 0.8 in
   let debug = false in
   let sep = ',' in
-  (* TODO gnuplot *)
+  let no_plot = false in
   (* TODO implement --NxCV *)
   (* TODO implement -l *)
   (* TODO implement -s *)
@@ -64,13 +65,18 @@ let main () =
   let actual, test_data =
     let a = MLR.matrix_of_csv_lines ~sep test_lines in
     (* first col. is target value *)
-    (a.(0), Utls.transpose_matrix a) in
-  let predicted = A.make nb_test 0.0 in
-  assert(A.length test_data = nb_test); (* FBR: CHECK *)
-  for i = 0 to nb_test - 1 do
-    predicted.(i) <- MLR.predict_one model test_data.(i)
-  done;
-  let r2 = Cpm.RegrStats.r2 (A.to_list actual) (A.to_list predicted) in
-  Log.info "R2: %.3f" r2
+    (A.to_list a.(0), Utls.transpose_matrix a) in
+  assert(A.length test_data = nb_test);
+  let preds =
+    let predicted' =
+      A.init nb_test (fun i ->
+          MLR.predict_one model test_data.(i)
+        ) in
+    A.to_list predicted' in
+  let r2 = Cpm.RegrStats.r2 actual preds in
+  let r2_str = sprintf "R2: %.3f" r2 in
+  (if not no_plot then Gnuplot.regr_plot r2_str actual preds);
+  Log.info "%s" r2_str;
+  ()
 
 let () = main ()
