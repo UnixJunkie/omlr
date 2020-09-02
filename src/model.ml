@@ -38,18 +38,26 @@ let main () =
         Sys.argv.(0);
       exit 1
     end;
-  (* TODO train on train *)
-  (* TODO test on test *)
+  (* defaults options ------------------------------------------------------ *)
+  let randomize = true in
+  let skip_header = true in
+  let train_portion = ref 0.8 in
+  let debug = false in
+  (* TODO train on train, test on test *)
   (* TODO compute R2 *)
   (* TODO gnuplot *)
   (* TODO implement --NxCV *)
   let input_fn = CLI.get_string ["-i"] args in
-  let data =
-    MLR.load_csv_file ~randomize:true ~skip_header:true ',' input_fn in
-  let std_params = MLR.standardization_params data in
-  MLR.standardize std_params data;
-  let coeffs = MLR.train_model true data in
-  A.iter (printf "%f\n") coeffs;
+  CLI.finalize (); (* ------------------------------------------------------ *)
+  let train_lines, _test_lines =
+    let all_lines = MLR.read_csv_file ~randomize ~skip_header input_fn in
+    Cpm.Utls.train_test_split !train_portion all_lines in
+  let train_data = MLR.matrix_of_csv_lines ',' train_lines in
+  let std_params = MLR.standardization_params train_data in
+  MLR.standardize std_params train_data;
+  let coeffs = MLR.train_model ~debug train_data in
+  let coeffs_str = Utls.string_of_floats_array coeffs in
+  Log.info "model coeffs: %s" coeffs_str;
   ()
 
 let () = main ()
