@@ -12,6 +12,7 @@ open Printf
 
 module A = Array
 module CLI = Minicli.CLI
+module Fn = Filename
 module Gnuplot = Omlr.Gnuplot
 module L = BatList
 module Log = Dolog.Log
@@ -78,7 +79,7 @@ let main () =
                [--NxCV <int>]: number of folds of cross validation\n  \
                [-s|--save <filename>]: save model to file\n  \
                TODO [-l|--load <filename>]: restore model from file\n  \
-               TODO [-o <filename>]: predictions output file\n  \
+               [-o <filename>]: predictions output file\n  \
                [--no-shuffle]: do not randomize input lines\n  \
                [--no-header]: CSV file has no header\n  \
                [--no-plot]: don't call gnuplot\n  \
@@ -94,6 +95,9 @@ let main () =
   let no_plot = CLI.get_set_bool ["--no-plot"] args in
   let train_portion = CLI.get_float_def ["-p"] args 0.8 in
   let maybe_model_fn = CLI.get_string_opt ["-s"] args in
+  let output_fn = match CLI.get_string_opt ["-o"] args with
+    | Some fn -> fn
+    | None -> Fn.temp_file ~temp_dir:"/tmp" "mlr_preds_" ".txt" in
   let debug = CLI.get_set_bool ["-v"] args in
   let sep = CLI.get_char_def ["-d"] args ',' in
   let nfolds = CLI.get_int_def ["-n";"--NxCV"] args 1 in
@@ -105,6 +109,8 @@ let main () =
     else (* nfolds > 1 *)
       train_test_nfolds debug sep randomize skip_header nfolds input_fn
   in
+  Utls.float_list_to_file output_fn preds;
+  Log.info "preds written to %s" output_fn;
   let r2 = Cpm.RegrStats.r2 actual preds in
   let r2_str = sprintf "R2: %.3f" r2 in
   (if not no_plot then Gnuplot.regr_plot r2_str actual preds);
