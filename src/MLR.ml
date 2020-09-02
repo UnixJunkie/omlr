@@ -86,6 +86,18 @@ let combine_std_params_and_optim_weights
       { mean = std.mean; sd = std.sd; w }
     ) std_params weights
 
+let dump_model_to_file fn model =
+  Utls.with_out_file fn (fun out ->
+      A.iteri (fun i x ->
+          if i = 0 then
+            fprintf out "%f %f %f mean sd intercept/w_i\n"
+              x.mean x.sd x.w
+          else
+            fprintf out "%f %f %f w_%d\n"
+              x.mean x.sd x.w i
+        ) model
+    )
+
 let regression_formula nb_columns =
   let buff = Buffer.create 80 in
   Buffer.add_string buff "c0 ~ ";
