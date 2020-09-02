@@ -523,6 +523,12 @@ let count_lines_of_file (fn: string): int =
 let floats_from_file fn =
   map_on_lines_of_file fn float_of_string
 
+(* write all floats to file *)
+let float_list_to_file fn l =
+  with_out_file fn (fun out ->
+      L.iter (fprintf out "%f\n") l
+    )
+
 let list_rev_sort cmp l =
   List.sort (fun x y -> cmp y x) l
 
