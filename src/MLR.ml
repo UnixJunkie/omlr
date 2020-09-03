@@ -88,15 +88,38 @@ let combine_std_params_and_optim_weights
 
 let dump_model_to_file fn model =
   Utls.with_out_file fn (fun out ->
+      fprintf out "#mean sd w_i (line 0: intercept only)\n";
       A.iteri (fun i x ->
-          if i = 0 then
-            fprintf out "%f %f %f mean sd intercept/w_i\n"
-              x.mean x.sd x.w
-          else
-            fprintf out "%f %f %f w_%d\n"
-              x.mean x.sd x.w i
+          if i = 0 then (* intercept *)
+            let () = assert(x.mean = 0.0 && x.sd = 0.0) in
+            fprintf out "%f\n" x.w
+          else (* std params and model weights *)
+            fprintf out "%f %f %f\n" x.mean x.sd x.w
         ) model
     )
+
+let load_model_from_file fn: model =
+  let all_lines = Utls.lines_of_file fn in
+  match all_lines with
+  | [] -> failwith ("MLR.load_model_from_file: no lines in " ^ fn)
+  | [_] -> failwith ("MLR.load_model_from_file: only one line in " ^ fn)
+  | _header :: lines ->
+    let n = L.length lines in
+    let res = A.make n { mean = 0.0; sd = 0.0; w = 0.0 } in
+    L.iteri (fun i line ->
+        if i = 0 then
+          let w = float_of_string line in
+          res.(i) <- { mean = 0.0; sd = 0.0; w }
+        else try
+            Scanf.sscanf line "%f %f %f" (fun mean sd w ->
+                res.(i) <- { mean; sd; w }
+              )
+          with exn ->
+            let () =
+              Log.fatal "MLR.load_model_from_file: cannot parse: %s" line in
+            raise exn
+      ) lines;
+    res
 
 let regression_formula nb_columns =
   let buff = Buffer.create 80 in
