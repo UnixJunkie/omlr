@@ -30,7 +30,7 @@ let train debug sep mode train_lines =
   (match mode with
    | Discard -> MLR.dump_model_to_file "/dev/stdout" model;
    | Save_to save_fn -> MLR.dump_model_to_file save_fn model
-   | Load_from load_fn ->
+   | Load_from _load_fn ->
      failwith ("Model.train: model must be loaded, not trained")
   );
   model
