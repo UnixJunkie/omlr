@@ -19,12 +19,19 @@ module Log = Dolog.Log
 module MLR = Omlr.MLR
 module Utls = Omlr.Utls
 
-let train debug sep maybe_model_fn train_lines =
+(* what to do with the model? *)
+type model_mode = Discard
+                | Save_to of string
+                | Load_from of string
+
+let train debug sep mode train_lines =
   let train_data = MLR.matrix_of_csv_lines ~sep train_lines in
   let model = MLR.train_model ~debug train_data in
-  (match maybe_model_fn with
-   | None -> MLR.dump_model_to_file "/dev/stdout" model;
-   | Some fn -> MLR.dump_model_to_file fn model
+  (match mode with
+   | Discard -> MLR.dump_model_to_file "/dev/stdout" model;
+   | Save_to save_fn -> MLR.dump_model_to_file save_fn model
+   | Load_from load_fn ->
+     failwith ("Model.train: model must be loaded, not trained")
   );
   model
 
@@ -41,6 +48,13 @@ let test sep model nb_test test_lines =
         ) in
     A.to_list predicted' in
   (actual, preds)
+
+let prod_run sep skip_header model_fn input_fn =
+  let model = MLR.load_model_from_file model_fn in
+  let test_lines = MLR.read_csv_file ~randomize:false ~skip_header input_fn in
+  let nb_test = L.length test_lines in
+  Log.info "nb_lines: %d" nb_test;
+  test sep model nb_test test_lines
 
 let train_test debug sep randomize skip_header train_portion maybe_model_fn input_fn =
   let train_lines, test_lines =
@@ -59,7 +73,7 @@ let train_test_nfolds debug sep randomize skip_header nfolds input_fn =
   let train_tests = Cpm.Utls.cv_folds nfolds all_lines in
   let actual_preds =
     L.map (fun (train_lines, test_lines) ->
-        let model = train debug sep None train_lines in
+        let model = train debug sep Discard train_lines in
         test sep model (L.length test_lines) test_lines
       ) train_tests in
   let actual, preds = L.split actual_preds in
@@ -78,7 +92,7 @@ let main () =
                [-i <input.csv>]: input CSV file\n  \
                [--NxCV <int>]: number of folds of cross validation\n  \
                [-s|--save <filename>]: save model to file\n  \
-               TODO [-l|--load <filename>]: restore model from file\n  \
+               [-l|--load <filename>]: restore model from file\n  \
                [-o <filename>]: predictions output file\n  \
                [--no-shuffle]: do not randomize input lines\n  \
                [--no-header]: CSV file has no header\n  \
@@ -94,7 +108,11 @@ let main () =
   let skip_header = not (CLI.get_set_bool ["--no-header"] args) in
   let no_plot = CLI.get_set_bool ["--no-plot"] args in
   let train_portion = CLI.get_float_def ["-p"] args 0.8 in
-  let maybe_model_fn = CLI.get_string_opt ["-s"] args in
+  let mode = match (CLI.get_string_opt ["-s"] args, CLI.get_string_opt ["-l"] args) with
+    | (Some _save_fn, Some _load_fn) -> failwith "Model: both -s and -l"
+    | (None, None) -> Discard
+    | (Some save_fn, None) -> Save_to save_fn
+    | (None, Some load_fn) -> Load_from load_fn in
   let output_fn = match CLI.get_string_opt ["-o"] args with
     | Some fn -> fn
     | None -> Fn.temp_file ~temp_dir:"/tmp" "mlr_preds_" ".txt" in
@@ -103,12 +121,14 @@ let main () =
   let nfolds = CLI.get_int_def ["-n";"--NxCV"] args 1 in
   let input_fn = CLI.get_string ["-i"] args in
   CLI.finalize (); (* ------------------------------------------------------ *)
-  let actual, preds =
-    if nfolds <= 1 then
-      train_test debug sep randomize skip_header train_portion maybe_model_fn input_fn
-    else (* nfolds > 1 *)
-      train_test_nfolds debug sep randomize skip_header nfolds input_fn
-  in
+  let actual, preds = match mode with
+    | Discard | Save_to _ ->
+      if nfolds <= 1 then
+        train_test debug sep randomize skip_header train_portion mode input_fn
+      else (* nfolds > 1 *)
+        train_test_nfolds debug sep randomize skip_header nfolds input_fn
+    | Load_from load_fn ->
+      prod_run sep skip_header load_fn input_fn in
   Utls.float_list_to_file output_fn preds;
   Log.info "preds written to %s" output_fn;
   let r2 = Cpm.RegrStats.r2 actual preds in
