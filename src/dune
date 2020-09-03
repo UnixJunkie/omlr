@@ -8,6 +8,6 @@
 ;; installed executables
 (executables
   (names model)
-  (public_names mlr_model)
+  (public_names omlr_model)
   (modules model)
   (libraries omlr batteries dolog minicli cpm))
